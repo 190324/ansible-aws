@@ -1,0 +1,39 @@
+- hosts: localhost
+  vars_files:
+    - ../../vars/ec2.yml
+  gather_facts: false
+  tasks:
+    - ec2_group:
+        name: '{{ name }}'
+        description: ec2 group db
+        vpc_id: '{{ vpc_id }}'
+        region: '{{ region }}'
+        tags:
+          Name: '{{ name }}'
+        rules:
+          - proto: tcp
+            from_port: 3306
+            to_port: 3306
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+      register: '{{ name }}'
+      vars:
+        name: ec2_group_db
+
+    - ec2:
+        key_name: '{{ key_name }}'
+        instance_type: '{{ web_instance_type }}'
+        image: '{{ image }}'
+        region: '{{ region }}'
+        vpc_subnet_id: '{{ vpc_subnet_id }}'
+        instance_tags:
+          Name: '{{ name }}'
+        wait: yes
+        group_id: '{{ ec2_group_db.group_id }}'
+        count: 1
+        assign_public_ip: no
+      vars:
+        name: ec2_db

@@ -1,0 +1,60 @@
+---
+- hosts: apiserver
+  roles:
+    - role: '../roles/common'
+      become: yes
+
+    - role: '../roles/nginx'
+      become: yes
+
+    - role: '../roles/php'
+      become: yes
+
+    - role: '../roles/mariadb'
+      become: yes
+  
+  tasks:
+    # demo site
+    - name: chmod /var/www/html
+      become: yes
+      file:
+        path: /var/www/html
+        state: directory
+        group: ec2-user
+        mode: '0775'
+
+    - name: Copy demo site
+      become: yes
+      copy:
+        src: ../templates/api/sites/demo.zip
+        dest: /var/www/html
+        owner: ec2-user
+        mode: u=rwx,g=r,o=r
+    
+    - name: Selinux network
+      become: yes
+      shell: >
+        setsebool -P httpd_can_network_connect on
+
+    - name: Enable site
+      shell: |
+        cd /var/www/html
+        rm -rf demo __MACOSX
+        unzip demo.zip
+        rm -rf demo.zip
+        chcon -R -t httpd_sys_content_t demo
+        cd demo
+        chmod -R 777 storage
+        chcon -R -t httpd_sys_rw_content_t storage
+        composer install
+
+    - name: Nginx setting
+      become: yes
+      copy:
+        src: ../templates/api/nginx/nginx.conf
+        dest: /etc/nginx
+      notify:
+        - restart nginx
+        
+  handlers:
+      - include: '../roles/nginx/handlers/main.yml'

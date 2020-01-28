@@ -1,0 +1,8 @@
+---
+- hosts: webserver
+  roles:
+    - { role: '../roles/common', become: yes }
+    - { role: '../roles/nginx', become: yes }
+  tasks:
+    - name: run echo command
+      command: /bin/echo hello world

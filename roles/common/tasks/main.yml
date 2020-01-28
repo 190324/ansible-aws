@@ -1,0 +1,11 @@
+---
+  - name: install common package
+    yum:
+      name: 
+        - vim
+        - git
+        - zip
+        - unzip
+        - lsof
+        # semanage selinux 管理工具
+        # - policycoreutils-python-utils.noarch

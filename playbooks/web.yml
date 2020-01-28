@@ -1,0 +1,91 @@
+---
+- hosts: webserver
+  roles:
+    - role: '../roles/common'
+      become: yes
+
+    - role: '../roles/nginx'
+      become: yes
+
+    - role: '../roles/php'
+      become: yes
+
+    - role: '../roles/mariadb'
+      become: yes
+
+  tasks:
+    - name: run echo command
+      command: /bin/echo hello world
+
+    # - name: upgrade all packages
+    #   become: yes
+    #   yum:
+    #     name: '*'
+    #     state: latest
+
+    - name: nvm
+      shell: >
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.2/install.sh | bash
+      args:
+        creates: "{{ ansible_env.HOME }}/.nvm/nvm.sh"
+        warn: false
+
+    - name: install node 
+      shell: >
+        source ~/.bashrc &&
+        nvm install {{ version }} &&
+        nvm use {{ version }} &&
+        nvm alias default {{ version }}
+      vars:
+        version: v12.14.1
+        executable: /bin/bash
+
+    - name: node package
+      shell: |
+        npm -g install pm2 yarn
+
+    # demo site
+    - name: chmod /var/www/html
+      become: yes
+      file:
+        path: /var/www/html
+        state: directory
+        group: ec2-user
+        mode: '0775'
+
+    - name: Copy demo site
+      become: yes
+      copy:
+        src: ../templates/web/sites/demo.zip
+        dest: /var/www/html
+        owner: ec2-user
+        mode: u=rwx,g=r,o=r
+    
+    - name: Selinux network
+      become: yes
+      shell: >
+        setsebool -P httpd_can_network_connect on
+
+    - name: Enable site
+      shell: |
+        source ~/.bashrc
+        cd /var/www/html
+        rm -rf demo
+        unzip demo.zip
+        rm -rf demo.zip
+        cd demo
+        yarn
+        yarn build
+        pm2 delete --silent "demo"
+        pm2 start npm --name "demo" -- start
+
+    - name: Nginx setting
+      become: yes
+      copy:
+        src: ../templates/web/nginx/nginx.conf
+        dest: /etc/nginx
+      notify:
+        - restart nginx
+        
+  handlers:
+      - include: '../roles/nginx/handlers/main.yml'

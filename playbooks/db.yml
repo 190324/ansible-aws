@@ -1,0 +1,61 @@
+---
+- hosts: webserver
+  roles:
+    - { role: '../roles/common', become: yes }
+  tasks:
+    - name: run echo command
+      command: /bin/echo hello world
+
+    - yum:
+        name: python3-pip
+        state: present
+      become: yes
+ 
+    - pip:
+        name: PyMySQL
+      become: yes
+
+    - name: install mariadb
+      become: yes
+      yum:
+        name:
+          - mariadb-server 
+          - mariadb
+      notify:
+        - started mariadb
+
+      
+    - name: Enable mariadb on reboot
+      become: yes
+      service:
+        name: mariadb
+        enabled: yes
+      notify:
+        - restart mariadb
+
+    - name: Set MariaDB root password for 127.0.0.1, ::1
+      mysql_user:
+        name: root
+        password: "1234567890_"
+        host: "{{ item }}"
+        login_user: root
+        state: present
+      with_items:
+        - ::1
+        - 127.0.0.1
+        - 18.140.197.72
+      # when: root_pwd_check.rc == 0
+      # tags: mariadb
+
+  handlers:
+    - name: started mariadb
+      become: yes
+      service: 
+        name: mariadb 
+        state: started
+
+    - name: restart mariadb
+      become: yes
+      service: 
+        name: mariadb 
+        state: restarted

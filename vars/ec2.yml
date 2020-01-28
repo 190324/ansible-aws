@@ -1,0 +1,10 @@
+vpc_id: vpc-98baafff
+region: ap-southeast-1
+image: ami-04a2d6660f1296314
+vpc_subnet_id: subnet-bece7ae7
+key_name: test_key_pair
+
+web_instance_type: t2.micro
+db_instance_type: t2.micro
+fs_instance_type: t2.micro
+api_instance_type: t2.micro

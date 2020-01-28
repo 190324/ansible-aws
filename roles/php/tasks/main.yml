@@ -1,0 +1,41 @@
+---
+  - name: install php default 7.2.11 on centos 8
+    yum:
+      name:
+        - php
+        - php-mbstring 
+        - php-xmlrpc 
+        - php-soap 
+        - php-gd 
+        - php-xml 
+        - php-cli 
+        - php-zip
+        - php-json
+        - php-pdo
+        - php-pdo_mysql
+    notify:
+      - restart nginx
+      - started php-fpm
+
+  - name: Enable service php-fpm on reboot
+    service:
+      name: php-fpm
+      enabled: yes
+    notify:
+      - restart php-fpm
+
+  - name: Download Composer
+    become: yes
+    script: ../../../scripts/install_composer.sh
+    args:
+      executable: /bin/bash
+    
+  - name: Move Composer globally
+    become: true
+    command: mv composer.phar /usr/local/bin/composer
+
+  - name: Set permissions on Composer
+    become: true
+    file:
+      path: /usr/local/bin/composer
+      mode: "a+x"
